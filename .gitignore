@@ -1,0 +1,30 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next
+/out
+/build
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# deploy
+.vercel
+
+# env / credenciais
+.env
+.env.local
+.env.production
+.env*
+!.env.example
+*.pem
+*.key
+
+# arquivos de origem / temporários (não versionar)
+*.pdf
+*.log
+npm-debug.log*
+
+# sistema
+.DS_Store
+Thumbs.db

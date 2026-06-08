@@ -4,12 +4,15 @@
  * Backend desta fase = n8n (apenas um Webhook). O site coleta os dados e
  * envia um POST em JSON para a URL abaixo.
  *
- * ┌──────────────────────────────────────────────────────────────────┐
- * │  >>> COLE AQUI A URL DO WEBHOOK DO n8n <<<                          │
- * │  Use a "Production URL" do nó Webhook (não a de teste).            │
- * └──────────────────────────────────────────────────────────────────┘
+ * A URL NÃO fica hardcoded: é lida da variável de ambiente pública
+ * `NEXT_PUBLIC_N8N_WEBHOOK_URL`.
+ *   - Local:  defina em `.env.local`
+ *   - Vercel: defina em Project → Settings → Environment Variables
+ *
+ * Quando a variável não está definida, o valor é "" (vazio) e o formulário
+ * apenas simula o envio (modo UX), sem fazer POST.
  */
-export const N8N_WEBHOOK_URL = "COLE_AQUI_O_WEBHOOK_DO_N8N";
+export const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ?? "";
 
 export type VehicleType = "Carro" | "Moto";
 export type CarSize = "Sedan/Hatch" | "SUV";

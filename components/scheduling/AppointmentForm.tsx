@@ -118,9 +118,9 @@ export function AppointmentForm() {
     };
 
     try {
-      // Enquanto o webhook não estiver configurado, pulamos o POST
-      // para permitir testar a experiência (UX) do formulário.
-      const configured = !N8N_WEBHOOK_URL.startsWith("COLE_AQUI");
+      // NEXT_PUBLIC_N8N_WEBHOOK_URL vazia => pulamos o POST e apenas
+      // simulamos o envio (modo UX), sem quebrar o fluxo do formulário.
+      const configured = N8N_WEBHOOK_URL.trim() !== "";
       if (configured) {
         const res = await fetch(N8N_WEBHOOK_URL, {
           method: "POST",
@@ -131,7 +131,7 @@ export function AppointmentForm() {
       } else {
         // eslint-disable-next-line no-console
         console.warn(
-          "[Agendamento] N8N_WEBHOOK_URL não configurado — POST ignorado. Payload:",
+          "[Agendamento] NEXT_PUBLIC_N8N_WEBHOOK_URL não definida — POST ignorado. Payload:",
           payload
         );
       }

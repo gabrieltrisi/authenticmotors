@@ -14,6 +14,12 @@
  */
 export const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ?? "";
 
+/**
+ * Endpoint que retorna os horários disponíveis/ocupados de uma data.
+ * Lida da env `NEXT_PUBLIC_N8N_HORARIOS_URL` (sem hardcode).
+ */
+export const N8N_HORARIOS_URL = process.env.NEXT_PUBLIC_N8N_HORARIOS_URL ?? "";
+
 export type VehicleType = "Carro" | "Moto";
 export type CarSize = "Sedan/Hatch" | "SUV";
 
@@ -153,6 +159,58 @@ export const TIME_SLOTS: string[] = Array.from({ length: 11 }, (_, i) => {
   const hour = 8 + i;
   return `${String(hour).padStart(2, "0")}:00`;
 });
+
+/** Resposta do endpoint de horários disponíveis. */
+export interface HorariosResponse {
+  success: boolean;
+  data: string;
+  horariosDisponiveis: string[];
+  horariosOcupados: string[];
+}
+
+/** Item de horário normalizado para a UI (disponível ou ocupado). */
+export interface HorarioSlot {
+  time: string;
+  available: boolean;
+}
+
+/**
+ * Consulta os horários de uma data (formato DD/MM/AAAA) no n8n.
+ * Sem a env configurada, devolve todos os TIME_SLOTS como disponíveis
+ * (fallback para permitir testar o fluxo localmente).
+ */
+export async function fetchHorarios(dataBR: string): Promise<HorariosResponse> {
+  if (!N8N_HORARIOS_URL.trim()) {
+    return {
+      success: true,
+      data: dataBR,
+      horariosDisponiveis: TIME_SLOTS,
+      horariosOcupados: [],
+    };
+  }
+  const res = await fetch(N8N_HORARIOS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: dataBR }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as HorariosResponse;
+}
+
+/** Normaliza a resposta em uma lista ordenada de slots para a UI. */
+export function toSlots(resp: HorariosResponse): HorarioSlot[] {
+  const disponiveis = (resp.horariosDisponiveis ?? []).map((time) => ({
+    time,
+    available: true,
+  }));
+  const ocupados = (resp.horariosOcupados ?? []).map((time) => ({
+    time,
+    available: false,
+  }));
+  return [...disponiveis, ...ocupados].sort((a, b) =>
+    a.time.localeCompare(b.time)
+  );
+}
 
 /** Payload enviado ao webhook do n8n. */
 export interface AppointmentPayload {

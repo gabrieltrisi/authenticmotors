@@ -22,13 +22,15 @@ import { cn, formatBRL, formatPhoneBR, formatDateBR } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 import {
   N8N_WEBHOOK_URL,
-  TIME_SLOTS,
+  fetchHorarios,
+  toSlots,
   findService,
   priceFor,
   priceDependsOnSize,
   servicesForVehicle,
   type AppointmentPayload,
   type CarSize,
+  type HorarioSlot,
   type VehicleType,
 } from "@/lib/scheduling";
 
@@ -59,6 +61,12 @@ export function AppointmentForm() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [minDate, setMinDate] = useState("");
 
+  // horários disponíveis (consulta dinâmica ao n8n conforme a data)
+  const [slots, setSlots] = useState<HorarioSlot[]>([]);
+  const [slotsState, setSlotsState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+
   // data mínima = hoje (definida no cliente p/ evitar mismatch de hidratação)
   useEffect(() => {
     const today = new Date();
@@ -73,6 +81,32 @@ export function AppointmentForm() {
   useEffect(() => {
     setServicoId("");
   }, [tipoVeiculo]);
+
+  // ao escolher/trocar a data, consulta os horários disponíveis no n8n
+  useEffect(() => {
+    setHorario(""); // limpa seleção anterior ao mudar a data
+    if (!data) {
+      setSlots([]);
+      setSlotsState("idle");
+      return;
+    }
+    let cancelled = false;
+    setSlotsState("loading");
+    fetchHorarios(formatDateBR(data))
+      .then((resp) => {
+        if (cancelled) return;
+        setSlots(toSlots(resp));
+        setSlotsState("ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSlots([]);
+        setSlotsState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [data]);
 
   const services = useMemo(
     () => servicesForVehicle(tipoVeiculo),
@@ -91,7 +125,12 @@ export function AppointmentForm() {
       e.whatsapp = "Informe um WhatsApp válido com DDD.";
     if (!servicoId) e.servico = "Selecione um serviço.";
     if (!data) e.data = "Escolha a data.";
-    if (!horario) e.horario = "Escolha o horário.";
+    // horário precisa ser válido (selecionado entre os disponíveis)
+    if (slotsState === "error")
+      e.horario = "Não foi possível carregar os horários disponíveis.";
+    else if (!horario) e.horario = "Escolha o horário.";
+    else if (!slots.some((s) => s.time === horario && s.available))
+      e.horario = "Selecione um horário disponível.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -326,34 +365,62 @@ export function AppointmentForm() {
           </Field>
         )}
 
-        {/* Data + Horário */}
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Data desejada" required error={errors.data} icon={Calendar}>
-            <input
-              type="date"
-              value={data}
-              min={minDate}
-              onChange={(e) => setData(e.target.value)}
-              className={cn(inputCls(!!errors.data), "[color-scheme:dark]")}
-            />
-          </Field>
-          <Field label="Horário desejado" required error={errors.horario} icon={Clock}>
-            <select
-              value={horario}
-              onChange={(e) => setHorario(e.target.value)}
-              className={cn(inputCls(!!errors.horario), "appearance-none pr-10")}
-            >
-              <option value="" disabled>
-                Selecione…
-              </option>
-              {TIME_SLOTS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
+        {/* Data */}
+        <Field label="Data desejada" required error={errors.data} icon={Calendar}>
+          <input
+            type="date"
+            value={data}
+            min={minDate}
+            onChange={(e) => setData(e.target.value)}
+            className={cn(inputCls(!!errors.data), "[color-scheme:dark]")}
+          />
+        </Field>
+
+        {/* Horário — consulta dinâmica de disponibilidade no n8n */}
+        <Field label="Horário desejado" required error={errors.horario} icon={Clock}>
+          {!data ? (
+            <p className="rounded-xl border border-dashed border-copper bg-background/30 px-4 py-3 text-sm text-foreground-muted/70">
+              Selecione uma data para ver os horários disponíveis.
+            </p>
+          ) : slotsState === "loading" ? (
+            <p className="flex items-center gap-2 rounded-xl border border-copper bg-background/40 px-4 py-3 text-sm text-foreground-muted">
+              <Loader2 className="h-4 w-4 animate-spin text-copper-light" />
+              Consultando horários disponíveis…
+            </p>
+          ) : slotsState === "error" ? (
+            <p className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              Não foi possível carregar os horários disponíveis.
+            </p>
+          ) : slots.length === 0 ? (
+            <p className="rounded-xl border border-copper bg-background/40 px-4 py-3 text-sm text-foreground-muted">
+              Nenhum horário disponível nesta data.
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {slots.map((s) => (
+                <button
+                  key={s.time}
+                  type="button"
+                  disabled={!s.available}
+                  aria-pressed={horario === s.time}
+                  title={s.available ? undefined : "Horário ocupado"}
+                  onClick={() => s.available && setHorario(s.time)}
+                  className={cn(
+                    "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all",
+                    !s.available
+                      ? "cursor-not-allowed border-white/10 bg-white/5 text-foreground-muted/40 line-through"
+                      : horario === s.time
+                        ? "border-copper-light bg-copper/15 text-white shadow-copper"
+                        : "border-copper bg-background/40 text-foreground-muted hover:border-copper-light/60 hover:text-white"
+                  )}
+                >
+                  {s.time}
+                </button>
               ))}
-            </select>
-          </Field>
-        </div>
+            </div>
+          )}
+        </Field>
 
         {/* Observações */}
         <Field label="Observações" icon={MessageSquare}>

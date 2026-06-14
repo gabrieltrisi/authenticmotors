@@ -16,6 +16,8 @@ import {
   TrendingDown,
   Wallet,
   CheckCircle2,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -37,10 +39,13 @@ import {
   type CashMovementType,
   type PaymentMethod,
 } from "@/lib/caixa";
+import { SERVICES_GROUPED, SERVICES_BY_ID } from "@/lib/services-catalog";
+import { downloadCsv, downloadPdf } from "@/lib/caixa-export";
 
 type LoadState = "loading" | "ready" | "error";
 
 const EMPTY_FORM = {
+  serviceId: "",
   type: "ENTRY" as CashMovementType,
   description: "",
   amount: "",
@@ -61,6 +66,7 @@ export function CashRegister() {
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const load = useCallback(async (dayISO: string) => {
     setState("loading");
@@ -81,6 +87,37 @@ export function CashRegister() {
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  /** Seleciona um serviço do catálogo e pré-preenche os campos do lançamento. */
+  function onSelectService(id: string) {
+    const svc = SERVICES_BY_ID[id];
+    if (!svc) {
+      // "Lançamento manual": só limpa a seleção, mantém o que já foi digitado.
+      update("serviceId", "");
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      serviceId: id,
+      type: "ENTRY",
+      description: svc.name,
+      serviceName: svc.name,
+      amount: svc.price.toFixed(2).replace(".", ","),
+      category: svc.category,
+    }));
+  }
+
+  async function handleExportPdf() {
+    setExportingPdf(true);
+    setFormError("");
+    try {
+      await downloadPdf(items, day);
+    } catch {
+      setFormError("Não foi possível gerar o PDF.");
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -179,18 +216,50 @@ export function CashRegister() {
       </header>
 
       <main className="container relative py-8">
-        {/* Filtro por data + resumo */}
+        {/* Filtro por data + exportação + resumo */}
         <div className="mb-6 flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-xs font-semibold uppercase tracking-wider text-foreground-muted">
-              Dia
-            </label>
-            <input
-              type="date"
-              value={day}
-              onChange={(e) => setDay(e.target.value || todayISODate())}
-              className="rounded-full border border-copper bg-background/60 px-4 py-2 text-sm text-white outline-none focus:border-copper-light focus:ring-2 focus:ring-copper/30"
-            />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <label
+                htmlFor="caixa-day"
+                className="text-xs font-semibold uppercase tracking-wider text-foreground-muted"
+              >
+                Dia
+              </label>
+              <input
+                id="caixa-day"
+                type="date"
+                value={day}
+                onChange={(e) => setDay(e.target.value || todayISODate())}
+                className="rounded-full border border-copper bg-background/60 px-4 py-2 text-sm text-white outline-none focus:border-copper-light focus:ring-2 focus:ring-copper/30"
+              />
+            </div>
+
+            {/* Exportação dos lançamentos do dia filtrado */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadCsv(items, day)}
+                disabled={state !== "ready" || items.length === 0}
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPdf}
+                disabled={state !== "ready" || items.length === 0 || exportingPdf}
+              >
+                {exportingPdf ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                Exportar PDF
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -223,6 +292,27 @@ export function CashRegister() {
             </h2>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              {/* Serviço do catálogo (pré-preenche os campos) */}
+              <Field label="Serviço (catálogo)">
+                <select
+                  value={form.serviceId}
+                  onChange={(e) => onSelectService(e.target.value)}
+                  aria-label="Serviço do catálogo"
+                  className={inputClass}
+                >
+                  <option value="">— Lançamento manual —</option>
+                  {SERVICES_GROUPED.map((group) => (
+                    <optgroup key={group.category} label={group.category}>
+                      {group.items.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} — {formatBRL(s.price)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </Field>
+
               {/* Tipo */}
               <div className="grid grid-cols-2 gap-2">
                 {(["ENTRY", "EXIT"] as CashMovementType[]).map((t) => (
@@ -271,6 +361,7 @@ export function CashRegister() {
                     onChange={(e) =>
                       update("paymentMethod", e.target.value as PaymentMethod)
                     }
+                    aria-label="Forma de pagamento"
                     className={inputClass}
                   >
                     {PAYMENT_OPTIONS.map((o) => (
@@ -381,7 +472,9 @@ export function CashRegister() {
                       <th className="px-5 py-4 font-semibold">Forma</th>
                       <th className="px-5 py-4 font-semibold">Tipo</th>
                       <th className="px-5 py-4 text-right font-semibold">Valor</th>
-                      <th className="px-5 py-4" />
+                      <th className="px-5 py-4">
+                        <span className="sr-only">Ações</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

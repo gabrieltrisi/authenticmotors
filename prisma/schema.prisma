@@ -1,0 +1,44 @@
+// Schema Prisma — módulo de Caixa da Authentic Motors.
+// Banco: PostgreSQL (Neon) via DATABASE_URL.
+// learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CashMovement {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  type          CashMovementType
+  description   String
+  amount        Decimal          @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  category      String?
+  customerName  String?
+  serviceName   String?
+  notes         String?
+  movementDate  DateTime
+  createdBy     String?
+
+  @@index([movementDate])
+}
+
+enum CashMovementType {
+  ENTRY
+  EXIT
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  DEBIT_CARD
+  CREDIT_CARD
+  OTHER
+}

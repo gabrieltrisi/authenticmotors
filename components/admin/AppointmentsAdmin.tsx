@@ -88,18 +88,22 @@ export function AppointmentsAdmin() {
       </header>
 
       <main className="container relative py-8">
-        {/* aviso de mock */}
-        {IS_USING_MOCK && (
-          <div className="mb-6 flex items-start gap-2 rounded-xl border border-copper bg-background-secondary/70 px-4 py-3 text-sm text-foreground-muted">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-copper-light" />
+        {/* aviso de origem dos dados */}
+        <div className="mb-6 flex items-start gap-2 rounded-xl border border-copper bg-background-secondary/70 px-4 py-3 text-sm text-foreground-muted">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-copper-light" />
+          {IS_USING_MOCK ? (
             <span>
               Exibindo <strong className="text-white">dados de exemplo</strong>.
-              Configure <code className="text-copper-light">ADMIN_API_URL</code>{" "}
-              em <code className="text-copper-light">lib/admin.ts</code> para
-              consumir a API real.
+              Configure{" "}
+              <code className="text-copper-light">NEXT_PUBLIC_ADMIN_API_URL</code>{" "}
+              para consumir a API real.
             </span>
-          </div>
-        )}
+          ) : (
+            <span>
+              Exibindo <strong className="text-white">dados reais via n8n</strong>.
+            </span>
+          )}
+        </div>
 
         {/* Controles */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

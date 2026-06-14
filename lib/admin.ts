@@ -1,16 +1,17 @@
 /**
  * Camada de dados do painel administrativo de agendamentos.
  *
- * Esta fase é SOMENTE FRONTEND. Ainda não há backend.
- * Quando a API existir, preencha `ADMIN_API_URL` com o endpoint GET que
- * retorna a lista de agendamentos no formato `AppointmentRecord[]`.
+ * A URL da API NÃO fica hardcoded: é lida da variável de ambiente pública
+ * `NEXT_PUBLIC_ADMIN_API_URL` (endpoint GET do n8n que lista os agendamentos).
+ *   - Local:  defina em `.env.local`
+ *   - Vercel: defina em Project → Settings → Environment Variables
  *
- * Enquanto a URL estiver vazia, a tela exibe DADOS DE EXEMPLO (mock) para
+ * Enquanto a variável estiver vazia, a tela exibe DADOS DE EXEMPLO (mock) para
  * permitir visualizar o layout.
  */
 
-// >>> COLE AQUI a URL da API (GET) que lista os agendamentos <<<
-export const ADMIN_API_URL = "";
+// Endpoint GET que lista os agendamentos (lido da env, sem hardcode).
+export const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "";
 
 export type AppointmentStatus =
   | "pendente"
@@ -97,8 +98,54 @@ export const MOCK_APPOINTMENTS: AppointmentRecord[] = [
 ];
 
 /**
+ * Formato bruto de cada agendamento como vem do webhook do n8n.
+ * Difere do `AppointmentRecord` interno: usa `dataAgendamento` e `status`
+ * em MAIÚSCULAS ("PENDENTE", "CONFIRMADO", ...).
+ */
+interface RawAppointment {
+  id: string;
+  nome: string;
+  servico: string;
+  dataAgendamento: string;
+  horario: string;
+  status: string;
+  // demais campos (whatsapp, placa, valor, etc.) existem mas não são usados aqui.
+  [key: string]: unknown;
+}
+
+/** Envelope da resposta do endpoint de listagem. */
+interface AdminApiResponse {
+  success: boolean;
+  appointments: RawAppointment[];
+}
+
+/** Converte o status do n8n (MAIÚSCULAS) para o `AppointmentStatus` interno. */
+function normalizeStatus(raw: string): AppointmentStatus {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (s === "confirmado") return "confirmado";
+  if (s === "concluido" || s === "concluído") return "concluido";
+  if (s === "cancelado") return "cancelado";
+  // qualquer outro valor (incl. "pendente" ou desconhecido) cai em pendente.
+  return "pendente";
+}
+
+/** Mapeia o registro bruto do n8n para o formato usado pela UI. */
+function mapAppointment(raw: RawAppointment): AppointmentRecord {
+  return {
+    id: String(raw.id),
+    nome: raw.nome ?? "",
+    servico: raw.servico ?? "",
+    data: raw.dataAgendamento ?? "",
+    horario: raw.horario ?? "",
+    status: normalizeStatus(raw.status),
+  };
+}
+
+/**
  * Busca os agendamentos. Quando `ADMIN_API_URL` estiver vazio, retorna o mock.
- * Lança erro em caso de falha de rede/HTTP para a tela tratar.
+ * Com a env configurada, faz GET no endpoint do n8n, valida `success === true`
+ * e mapeia os registros. Lança erro em caso de falha de rede/HTTP/payload
+ * para a tela tratar.
  */
 export async function fetchAppointments(): Promise<AppointmentRecord[]> {
   if (!ADMIN_API_URL) {
@@ -108,7 +155,12 @@ export async function fetchAppointments(): Promise<AppointmentRecord[]> {
   }
   const res = await fetch(ADMIN_API_URL, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return (await res.json()) as AppointmentRecord[];
+
+  const payload = (await res.json()) as AdminApiResponse;
+  if (!payload?.success) {
+    throw new Error("Resposta da API sem success === true");
+  }
+  return (payload.appointments ?? []).map(mapAppointment);
 }
 
 /** Indica se estamos exibindo dados de exemplo (API ainda não configurada). */

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { AdminGate } from "@/components/admin/AdminGate";
 import { AppointmentsAdmin } from "@/components/admin/AppointmentsAdmin";
 
 export const metadata: Metadata = {
@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function AdminAgendamentosPage() {
-  // Sem autenticação/backend ainda: bloqueia em produção (Vercel),
-  // permanecendo acessível apenas em desenvolvimento local.
-  if (process.env.NODE_ENV === "production") {
-    notFound();
-  }
-  return <AppointmentsAdmin />;
+  // Acesso liberado em produção, protegido por senha simples (client-side).
+  return (
+    <AdminGate>
+      <AppointmentsAdmin />
+    </AdminGate>
+  );
 }

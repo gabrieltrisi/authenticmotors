@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminSummaryCard } from "@/components/admin/AdminSummaryCard";
 import {
-  fetchAppointments,
+  fetchAdminAppointments,
   STATUS_META,
-  type AppointmentRecord,
+  type AdminAppointment,
 } from "@/lib/admin";
 import {
   fetchMovements,
@@ -53,7 +53,7 @@ export function AdminDashboard() {
   const todayISO = todayISODate();
   const todayBR = isoToBR(todayISO);
 
-  const [appts, setAppts] = useState<AppointmentRecord[]>([]);
+  const [appts, setAppts] = useState<AdminAppointment[]>([]);
   const [apptStatus, setApptStatus] = useState<Status>("loading");
 
   const [movements, setMovements] = useState<CashMovement[]>([]);
@@ -62,7 +62,8 @@ export function AdminDashboard() {
   const loadAppts = useCallback(async () => {
     setApptStatus("loading");
     try {
-      setAppts(await fetchAppointments());
+      const { items } = await fetchAdminAppointments();
+      setAppts(items);
       setApptStatus("ready");
     } catch {
       setApptStatus("error");

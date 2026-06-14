@@ -1,17 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, AlertTriangle, Inbox, Info } from "lucide-react";
+import {
+  RefreshCw,
+  Search,
+  AlertTriangle,
+  Inbox,
+  Info,
+  Database,
+  Check,
+  CheckCheck,
+  X,
+  MessageCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AdminNav } from "@/components/admin/AdminNav";
 import {
-  fetchAppointments,
+  fetchAdminAppointments,
+  updateAppointmentStatus,
   STATUS_META,
-  IS_USING_MOCK,
-  type AppointmentRecord,
+  type AdminAppointment,
   type AppointmentStatus,
+  type AppointmentsSource,
+  type StatusAction,
 } from "@/lib/admin";
 
 type LoadState = "loading" | "ready" | "error";
@@ -24,17 +38,32 @@ const STATUS_FILTERS: Array<{ value: "todos" | AppointmentStatus; label: string 
   { value: "cancelado", label: "Cancelados" },
 ];
 
+/** Monta um link wa.me para o CLIENTE (número do agendamento). */
+function customerWhatsappLink(a: AdminAppointment): string | null {
+  const digits = a.whatsapp.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const withCc = digits.length <= 11 ? `55${digits}` : digits;
+  const msg = `Olá ${a.nome}! Sobre seu agendamento na Authentic Motors — ${a.servico} em ${a.data} às ${a.horario}.`;
+  return `https://wa.me/${withCc}?text=${encodeURIComponent(msg)}`;
+}
+
 export function AppointmentsAdmin() {
-  const [items, setItems] = useState<AppointmentRecord[]>([]);
+  const [items, setItems] = useState<AdminAppointment[]>([]);
   const [state, setState] = useState<LoadState>("loading");
+  const [source, setSource] = useState<AppointmentsSource>("db");
   const [filter, setFilter] = useState<"todos" | AppointmentStatus>("todos");
   const [query, setQuery] = useState("");
+  const [actingId, setActingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ tone: "ok" | "err"; text: string } | null>(
+    null
+  );
 
   const load = useCallback(async () => {
     setState("loading");
     try {
-      const data = await fetchAppointments();
-      setItems(data);
+      const { items, source } = await fetchAdminAppointments();
+      setItems(items);
+      setSource(source);
       setState("ready");
     } catch {
       setState("error");
@@ -55,6 +84,49 @@ export function AppointmentsAdmin() {
       return okStatus && okQuery;
     });
   }, [items, filter, query]);
+
+  async function handleAction(a: AdminAppointment, status: StatusAction) {
+    if (
+      status === "CANCELED" &&
+      !window.confirm("Cancelar este agendamento? O horário será liberado.")
+    )
+      return;
+    if (
+      status === "COMPLETED" &&
+      !window.confirm("Concluir o agendamento? Será gerada uma entrada no caixa.")
+    )
+      return;
+
+    setActingId(a.id);
+    setFeedback(null);
+    try {
+      const r = await updateAppointmentStatus(a.id, status);
+      if (status === "COMPLETED") {
+        setFeedback({
+          tone: "ok",
+          text: r.cashMovementCreated
+            ? "Concluído. Entrada gerada automaticamente no caixa."
+            : "Concluído. (a entrada no caixa já existia)",
+        });
+      } else {
+        setFeedback({
+          tone: "ok",
+          text:
+            status === "CONFIRMED"
+              ? "Agendamento confirmado."
+              : "Agendamento cancelado. Horário liberado.",
+        });
+      }
+      await load();
+    } catch (err) {
+      setFeedback({
+        tone: "err",
+        text: err instanceof Error ? err.message : "Erro ao atualizar status.",
+      });
+    } finally {
+      setActingId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,22 +164,51 @@ export function AppointmentsAdmin() {
       </header>
 
       <main className="container relative py-8">
-        {/* aviso de origem dos dados */}
-        <div className="mb-6 flex items-start gap-2 rounded-xl border border-copper bg-background-secondary/70 px-4 py-3 text-sm text-foreground-muted">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-copper-light" />
-          {IS_USING_MOCK ? (
-            <span>
-              Exibindo <strong className="text-white">dados de exemplo</strong>.
-              Configure{" "}
-              <code className="text-copper-light">NEXT_PUBLIC_ADMIN_API_URL</code>{" "}
-              para consumir a API real.
-            </span>
+        {/* Origem dos dados */}
+        <div
+          className={cn(
+            "mb-6 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm",
+            source === "db"
+              ? "border-copper bg-background-secondary/70 text-foreground-muted"
+              : "border-amber-400/40 bg-amber-400/10 text-amber-200"
+          )}
+        >
+          {source === "db" ? (
+            <>
+              <Database className="mt-0.5 h-4 w-4 shrink-0 text-copper-light" />
+              <span>
+                Fonte: <strong className="text-white">banco de dados (PostgreSQL)</strong>.
+              </span>
+            </>
           ) : (
-            <span>
-              Exibindo <strong className="text-white">dados reais via n8n</strong>.
-            </span>
+            <>
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Fonte: <strong>n8n / dados de exemplo (fallback)</strong> — a API
+                nativa não respondeu. As ações de status ficam indisponíveis.
+              </span>
+            </>
           )}
         </div>
+
+        {/* Feedback de ação */}
+        {feedback && (
+          <div
+            className={cn(
+              "mb-6 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm",
+              feedback.tone === "ok"
+                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
+                : "border-red-500/40 bg-red-500/10 text-red-300"
+            )}
+          >
+            {feedback.tone === "ok" ? (
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            )}
+            <span>{feedback.text}</span>
+          </div>
+        )}
 
         {/* Controles */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -149,7 +250,7 @@ export function AppointmentsAdmin() {
             <EmptyState
               icon={AlertTriangle}
               title="Erro ao carregar"
-              text="Não foi possível buscar os agendamentos. Verifique a API e tente novamente."
+              text="Não foi possível buscar os agendamentos. Tente novamente."
               action={
                 <Button variant="outline" size="sm" onClick={load}>
                   <RefreshCw className="h-4 w-4" />
@@ -172,7 +273,11 @@ export function AppointmentsAdmin() {
           )}
 
           {state === "ready" && filtered.length > 0 && (
-            <AppointmentsTable items={filtered} />
+            <AppointmentsTable
+              items={filtered}
+              actingId={actingId}
+              onAction={handleAction}
+            />
           )}
         </div>
 
@@ -187,13 +292,21 @@ export function AppointmentsAdmin() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Tabela                                                             */
+/*  Tabela                                                            */
 /* ------------------------------------------------------------------ */
 
-function AppointmentsTable({ items }: { items: AppointmentRecord[] }) {
+function AppointmentsTable({
+  items,
+  actingId,
+  onAction,
+}: {
+  items: AdminAppointment[];
+  actingId: string | null;
+  onAction: (a: AdminAppointment, status: StatusAction) => void;
+}) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="w-full min-w-[760px] text-left text-sm">
         <thead>
           <tr className="border-b border-copper text-[11px] uppercase tracking-wider text-foreground-muted">
             <th className="px-5 py-4 font-semibold">Nome</th>
@@ -201,6 +314,7 @@ function AppointmentsTable({ items }: { items: AppointmentRecord[] }) {
             <th className="px-5 py-4 font-semibold">Data</th>
             <th className="px-5 py-4 font-semibold">Horário</th>
             <th className="px-5 py-4 font-semibold">Status</th>
+            <th className="px-5 py-4 text-right font-semibold">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -209,7 +323,14 @@ function AppointmentsTable({ items }: { items: AppointmentRecord[] }) {
               key={a.id}
               className="border-b border-copper/40 transition-colors last:border-0 hover:bg-copper/5"
             >
-              <td className="px-5 py-4 font-medium text-white">{a.nome}</td>
+              <td className="px-5 py-4">
+                <span className="font-medium text-white">{a.nome}</span>
+                {a.veiculo && (
+                  <span className="mt-0.5 block text-xs text-foreground-muted">
+                    {a.veiculo}
+                  </span>
+                )}
+              </td>
               <td className="px-5 py-4 text-foreground-muted">{a.servico}</td>
               <td className="whitespace-nowrap px-5 py-4 text-foreground-muted">
                 {a.data}
@@ -220,11 +341,105 @@ function AppointmentsTable({ items }: { items: AppointmentRecord[] }) {
               <td className="px-5 py-4">
                 <StatusBadge status={a.status} />
               </td>
+              <td className="px-5 py-4">
+                <RowActions a={a} acting={actingId === a.id} onAction={onAction} />
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function RowActions({
+  a,
+  acting,
+  onAction,
+}: {
+  a: AdminAppointment;
+  acting: boolean;
+  onAction: (a: AdminAppointment, status: StatusAction) => void;
+}) {
+  const wa = customerWhatsappLink(a);
+  const canConfirm = a.source === "db" && a.status === "pendente";
+  const canComplete =
+    a.source === "db" && (a.status === "pendente" || a.status === "confirmado");
+  const canCancel =
+    a.source === "db" && a.status !== "cancelado" && a.status !== "concluido";
+
+  return (
+    <div className="flex items-center justify-end gap-1.5">
+      {canConfirm && (
+        <ActionButton
+          title="Confirmar"
+          disabled={acting}
+          onClick={() => onAction(a, "CONFIRMED")}
+          className="hover:bg-sky-400/10 hover:text-sky-300"
+          icon={Check}
+        />
+      )}
+      {canComplete && (
+        <ActionButton
+          title="Concluir (gera entrada no caixa)"
+          disabled={acting}
+          onClick={() => onAction(a, "COMPLETED")}
+          className="hover:bg-emerald-400/10 hover:text-emerald-300"
+          icon={CheckCheck}
+        />
+      )}
+      {canCancel && (
+        <ActionButton
+          title="Cancelar"
+          disabled={acting}
+          onClick={() => onAction(a, "CANCELED")}
+          className="hover:bg-red-500/10 hover:text-red-300"
+          icon={X}
+        />
+      )}
+      {wa && (
+        <a
+          href={wa}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Abrir WhatsApp do cliente"
+          className="rounded-lg p-2 text-foreground-muted transition-colors hover:bg-emerald-400/10 hover:text-emerald-300"
+        >
+          <MessageCircle className="h-4 w-4" />
+        </a>
+      )}
+      {acting && <RefreshCw className="h-4 w-4 animate-spin text-copper-light" />}
+    </div>
+  );
+}
+
+function ActionButton({
+  title,
+  icon: Icon,
+  onClick,
+  disabled,
+  className,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "rounded-lg p-2 text-foreground-muted transition-colors disabled:opacity-40",
+        className
+      )}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
   );
 }
 

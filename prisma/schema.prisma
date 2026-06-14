@@ -27,7 +27,51 @@ model CashMovement {
   movementDate  DateTime
   createdBy     String?
 
+  // Vínculo opcional com o agendamento que gerou esta entrada (dedup da
+  // entrada automática ao concluir um agendamento). `@unique` garante no máximo
+  // uma movimentação por agendamento.
+  appointmentId String?      @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
   @@index([movementDate])
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customerName    String
+  whatsapp        String
+  vehicleType     String
+  vehicleModel    String
+  plate           String?
+  serviceName     String
+  serviceCategory String?
+  vehicleSize     String?
+  amount          Decimal @db.Decimal(10, 2)
+
+  appointmentDate DateTime
+  appointmentTime String
+
+  notes  String?
+  status AppointmentStatus @default(PENDING)
+
+  source String @default("site-authentic-motors")
+
+  confirmedAt DateTime?
+  completedAt DateTime?
+  canceledAt  DateTime?
+
+  reminderSentAt     DateTime?
+  confirmationSentAt DateTime?
+
+  // Entrada de caixa gerada ao concluir (1:1 opcional).
+  cashMovement CashMovement?
+
+  @@index([appointmentDate])
+  @@index([status])
+  @@index([appointmentDate, appointmentTime])
 }
 
 enum CashMovementType {
@@ -41,4 +85,11 @@ enum PaymentMethod {
   DEBIT_CARD
   CREDIT_CARD
   OTHER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELED
 }

@@ -21,7 +21,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { cn, formatBRL, formatPhoneBR, formatDateBR } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 import {
-  N8N_WEBHOOK_URL,
+  submitAppointment,
   fetchHorarios,
   toSlots,
   findService,
@@ -157,23 +157,9 @@ export function AppointmentForm() {
     };
 
     try {
-      // NEXT_PUBLIC_N8N_WEBHOOK_URL vazia => pulamos o POST e apenas
-      // simulamos o envio (modo UX), sem quebrar o fluxo do formulário.
-      const configured = N8N_WEBHOOK_URL.trim() !== "";
-      if (configured) {
-        const res = await fetch(N8N_WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      } else {
-        // eslint-disable-next-line no-console
-        console.warn(
-          "[Agendamento] NEXT_PUBLIC_N8N_WEBHOOK_URL não definida — POST ignorado. Payload:",
-          payload
-        );
-      }
+      // Fonte principal: API interna (PostgreSQL). Fallback automático para o
+      // n8n é tratado dentro de submitAppointment.
+      await submitAppointment(payload);
 
       setStatus("success");
 

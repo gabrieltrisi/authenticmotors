@@ -165,3 +165,122 @@ export async function fetchAppointments(): Promise<AppointmentRecord[]> {
 
 /** Indica se estamos exibindo dados de exemplo (API ainda não configurada). */
 export const IS_USING_MOCK = ADMIN_API_URL === "";
+
+/* ================================================================== */
+/*  Agendamentos NATIVOS (PostgreSQL via /api/admin/appointments)     */
+/*  Fonte principal. Fallback para n8n/mock se a API interna falhar.  */
+/* ================================================================== */
+
+/** Origem dos dados exibidos no painel. */
+export type AppointmentsSource = "db" | "n8n";
+
+/** Registro unificado usado pela UI do painel (independe da origem). */
+export interface AdminAppointment {
+  id: string;
+  source: AppointmentsSource;
+  nome: string;
+  whatsapp: string;
+  servico: string;
+  /** DD/MM/AAAA */
+  data: string;
+  horario: string;
+  status: AppointmentStatus;
+  amount: number;
+  veiculo?: string;
+}
+
+/** Status nativos (enum do Prisma) -> status interno em PT. */
+const NATIVE_STATUS_MAP: Record<string, AppointmentStatus> = {
+  PENDING: "pendente",
+  CONFIRMED: "confirmado",
+  COMPLETED: "concluido",
+  CANCELED: "cancelado",
+};
+
+/** Forma serializada de um Appointment vinda da API interna. */
+interface NativeAppointment {
+  id: string;
+  customerName: string;
+  whatsapp: string;
+  vehicleType?: string;
+  vehicleModel?: string;
+  serviceName: string;
+  amount: number;
+  data: string;
+  horario: string;
+  appointmentTime?: string;
+  status: string;
+}
+
+function mapNative(a: NativeAppointment): AdminAppointment {
+  return {
+    id: a.id,
+    source: "db",
+    nome: a.customerName ?? "",
+    whatsapp: a.whatsapp ?? "",
+    servico: a.serviceName ?? "",
+    data: a.data ?? "",
+    horario: a.horario ?? a.appointmentTime ?? "",
+    status: NATIVE_STATUS_MAP[a.status] ?? "pendente",
+    amount: typeof a.amount === "number" ? a.amount : 0,
+    veiculo: [a.vehicleType, a.vehicleModel].filter(Boolean).join(" "),
+  };
+}
+
+function legacyToAdmin(r: AppointmentRecord): AdminAppointment {
+  return {
+    id: r.id,
+    source: "n8n",
+    nome: r.nome,
+    whatsapp: "",
+    servico: r.servico,
+    data: r.data,
+    horario: r.horario,
+    status: r.status,
+    amount: 0,
+  };
+}
+
+/**
+ * Busca os agendamentos para o painel. Tenta primeiro a API NATIVA
+ * (PostgreSQL). Se ela falhar (rede/HTTP/payload), cai para o n8n/mock.
+ */
+export async function fetchAdminAppointments(): Promise<{
+  items: AdminAppointment[];
+  source: AppointmentsSource;
+}> {
+  try {
+    const res = await fetch("/api/admin/appointments", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = (await res.json()) as {
+      success: boolean;
+      appointments: NativeAppointment[];
+    };
+    if (!data?.success) throw new Error("payload inválido");
+    return { items: (data.appointments ?? []).map(mapNative), source: "db" };
+  } catch {
+    // Fallback: n8n (ou mock se a env não estiver configurada).
+    const legacy = await fetchAppointments();
+    return { items: legacy.map(legacyToAdmin), source: "n8n" };
+  }
+}
+
+/** Status aceitos pela ação administrativa. */
+export type StatusAction = "CONFIRMED" | "COMPLETED" | "CANCELED";
+
+/** Atualiza o status de um agendamento nativo (PATCH). */
+export async function updateAppointmentStatus(
+  id: string,
+  status: StatusAction
+): Promise<{ cashMovementCreated?: boolean }> {
+  const res = await fetch(`/api/admin/appointments/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.success) {
+    throw new Error(data?.error ?? `HTTP ${res.status}`);
+  }
+  return data;
+}

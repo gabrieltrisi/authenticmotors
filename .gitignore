@@ -31,3 +31,5 @@ Thumbs.db
 
 # workspace local do Claude (não versionar)
 .claude/
+
+/lib/generated/prisma

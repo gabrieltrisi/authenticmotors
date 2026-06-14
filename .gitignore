@@ -28,3 +28,6 @@ npm-debug.log*
 # sistema
 .DS_Store
 Thumbs.db
+
+# workspace local do Claude (não versionar)
+.claude/

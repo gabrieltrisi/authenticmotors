@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializeAppointment } from "@/lib/appointments-server";
+import {
+  sendAppointmentConfirmedEmail,
+  sendAppointmentCanceledEmail,
+  sendAppointmentCompletedEmail,
+} from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,6 +84,37 @@ export async function PATCH(
 
       return { updated, cashCreated };
     });
+
+    // E-mail conforme o novo status (best-effort + dedup pelos *SentAt).
+    try {
+      if (status === "CONFIRMED" && !existing.confirmationSentAt) {
+        const r = await sendAppointmentConfirmedEmail(updated);
+        if (r.sent) {
+          await prisma.appointment.update({
+            where: { id },
+            data: { confirmationSentAt: new Date() },
+          });
+        }
+      } else if (status === "CANCELED" && !existing.canceledEmailSentAt) {
+        const r = await sendAppointmentCanceledEmail(updated);
+        if (r.sent) {
+          await prisma.appointment.update({
+            where: { id },
+            data: { canceledEmailSentAt: new Date() },
+          });
+        }
+      } else if (status === "COMPLETED" && !existing.completedEmailSentAt) {
+        const r = await sendAppointmentCompletedEmail(updated);
+        if (r.sent) {
+          await prisma.appointment.update({
+            where: { id },
+            data: { completedEmailSentAt: new Date() },
+          });
+        }
+      }
+    } catch (mailErr) {
+      console.error("[PATCH status] envio de e-mail falhou:", mailErr);
+    }
 
     return NextResponse.json({
       success: true,

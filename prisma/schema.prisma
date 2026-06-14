@@ -43,6 +43,7 @@ model Appointment {
 
   customerName    String
   whatsapp        String
+  email           String?
   vehicleType     String
   vehicleModel    String
   plate           String?
@@ -63,8 +64,12 @@ model Appointment {
   completedAt DateTime?
   canceledAt  DateTime?
 
-  reminderSentAt     DateTime?
-  confirmationSentAt DateTime?
+  // Controle de e-mails enviados (dedup — evita reenvio).
+  createdEmailSentAt   DateTime?
+  confirmationSentAt   DateTime?
+  canceledEmailSentAt  DateTime?
+  completedEmailSentAt DateTime?
+  reminderSentAt       DateTime?
 
   // Entrada de caixa gerada ao concluir (1:1 opcional).
   cashMovement CashMovement?

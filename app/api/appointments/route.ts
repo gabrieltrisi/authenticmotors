@@ -6,6 +6,7 @@ import {
   parseCurrency,
   serializeAppointment,
 } from "@/lib/appointments-server";
+import { sendAppointmentCreatedEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
     const {
       nome,
       whatsapp,
+      email,
       tipoVeiculo,
       modeloVeiculo,
       placa,
@@ -84,6 +86,7 @@ export async function POST(request: Request) {
       data: {
         customerName: str(nome),
         whatsapp: str(whatsapp),
+        email: optional(email),
         vehicleType: str(tipoVeiculo),
         vehicleModel: str(modeloVeiculo),
         plate: optional(placa),
@@ -98,6 +101,19 @@ export async function POST(request: Request) {
         // status PENDING por padrão (schema)
       },
     });
+
+    // E-mail de criação (best-effort: não bloqueia/derruba a resposta).
+    try {
+      const r = await sendAppointmentCreatedEmail(created);
+      if (r.sent) {
+        await prisma.appointment.update({
+          where: { id: created.id },
+          data: { createdEmailSentAt: new Date() },
+        });
+      }
+    } catch (mailErr) {
+      console.error("[POST /api/appointments] e-mail de criação falhou:", mailErr);
+    }
 
     return NextResponse.json(
       { success: true, appointment: serializeAppointment(created) },

@@ -5,6 +5,7 @@ import { RefreshCw, Search, AlertTriangle, Inbox, Info } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AdminNav } from "@/components/admin/AdminNav";
 import {
   fetchAppointments,
   STATUS_META,
@@ -61,29 +62,32 @@ export function AppointmentsAdmin() {
 
       {/* Top bar */}
       <header className="relative border-b border-copper bg-background-secondary/80 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between md:h-20">
-          <div className="flex items-center gap-3">
-            <Logo withWordmark={false} size={36} />
-            <div className="leading-tight">
-              <h1 className="font-display text-lg font-extrabold uppercase text-white">
-                Agendamentos
-              </h1>
-              <p className="text-[11px] uppercase tracking-wider text-copper-light">
-                Painel administrativo
-              </p>
+        <div className="container">
+          <div className="flex h-16 items-center justify-between md:h-20">
+            <div className="flex items-center gap-3">
+              <Logo withWordmark={false} size={36} />
+              <div className="leading-tight">
+                <h1 className="font-display text-lg font-extrabold uppercase text-white">
+                  Agendamentos
+                </h1>
+                <p className="text-[11px] uppercase tracking-wider text-copper-light">
+                  Painel administrativo
+                </p>
+              </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={load}
+              disabled={state === "loading"}
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", state === "loading" && "animate-spin")}
+              />
+              Atualizar
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={load}
-            disabled={state === "loading"}
-          >
-            <RefreshCw
-              className={cn("h-4 w-4", state === "loading" && "animate-spin")}
-            />
-            Atualizar
-          </Button>
+          <AdminNav />
         </div>
       </header>
 

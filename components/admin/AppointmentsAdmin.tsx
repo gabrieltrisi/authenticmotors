@@ -11,12 +11,16 @@ import {
   Check,
   CheckCheck,
   X,
-  MessageCircle,
   CheckCircle2,
+  CalendarCheck,
+  CalendarX,
+  BellRing,
+  Star,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { waLinkTo } from "@/lib/whatsapp";
 import { AdminNav } from "@/components/admin/AdminNav";
 import {
   fetchAdminAppointments,
@@ -38,13 +42,26 @@ const STATUS_FILTERS: Array<{ value: "todos" | AppointmentStatus; label: string 
   { value: "cancelado", label: "Cancelados" },
 ];
 
-/** Monta um link wa.me para o CLIENTE (número do agendamento). */
-function customerWhatsappLink(a: AdminAppointment): string | null {
-  const digits = a.whatsapp.replace(/\D/g, "");
-  if (digits.length < 10) return null;
-  const withCc = digits.length <= 11 ? `55${digits}` : digits;
-  const msg = `Olá ${a.nome}! Sobre seu agendamento na Authentic Motors — ${a.servico} em ${a.data} às ${a.horario}.`;
-  return `https://wa.me/${withCc}?text=${encodeURIComponent(msg)}`;
+/**
+ * Mensagens prontas (wa.me) para enviar ao cliente com um clique.
+ * Retorna null quando o número do agendamento não é válido.
+ */
+function whatsappActions(a: AdminAppointment) {
+  const base = `Serviço: ${a.servico}\nData: ${a.data}\nHorário: ${a.horario}`;
+  const messages = {
+    confirm: `Olá, ${a.nome}! Seu agendamento na Authentic Motors foi confirmado.\n\n${base}\n\nEsperamos por você!`,
+    reminder: `Olá, ${a.nome}! Passando para lembrar do seu agendamento na Authentic Motors.\n\n${base}\n\nAté breve!`,
+    cancel: `Olá, ${a.nome}. Seu agendamento na Authentic Motors foi cancelado.\n\n${base}\n\nCaso queira reagendar, estamos à disposição.`,
+    review: `Olá, ${a.nome}! Seu serviço na Authentic Motors foi concluído.\n\nAgradecemos pela confiança. Se puder, deixe sua avaliação sobre nosso atendimento.`,
+  };
+  const confirm = waLinkTo(a.whatsapp, messages.confirm);
+  if (!confirm) return null; // telefone inválido -> sem ações de WhatsApp
+  return {
+    confirm,
+    reminder: waLinkTo(a.whatsapp, messages.reminder)!,
+    cancel: waLinkTo(a.whatsapp, messages.cancel)!,
+    review: waLinkTo(a.whatsapp, messages.review)!,
+  };
 }
 
 export function AppointmentsAdmin() {
@@ -361,7 +378,7 @@ function RowActions({
   acting: boolean;
   onAction: (a: AdminAppointment, status: StatusAction) => void;
 }) {
-  const wa = customerWhatsappLink(a);
+  const wa = whatsappActions(a);
   const canConfirm = a.source === "db" && a.status === "pendente";
   const canComplete =
     a.source === "db" && (a.status === "pendente" || a.status === "confirmado");
@@ -398,15 +415,17 @@ function RowActions({
         />
       )}
       {wa && (
-        <a
-          href={wa}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Abrir WhatsApp do cliente"
-          className="rounded-lg p-2 text-foreground-muted transition-colors hover:bg-emerald-400/10 hover:text-emerald-300"
-        >
-          <MessageCircle className="h-4 w-4" />
-        </a>
+        <>
+          <span className="mx-0.5 h-5 w-px shrink-0 bg-copper/40" aria-hidden />
+          <WaLink href={wa.confirm} title="WhatsApp: confirmação" icon={CalendarCheck} />
+          <WaLink href={wa.reminder} title="WhatsApp: lembrete" icon={BellRing} />
+          <WaLink href={wa.cancel} title="WhatsApp: cancelamento" icon={CalendarX} />
+          <WaLink
+            href={wa.review}
+            title="WhatsApp: concluído / avaliação"
+            icon={Star}
+          />
+        </>
       )}
       {acting && <RefreshCw className="h-4 w-4 animate-spin text-copper-light" />}
     </div>
@@ -440,6 +459,30 @@ function ActionButton({
     >
       <Icon className="h-4 w-4" />
     </button>
+  );
+}
+
+/** Link wa.me (verde) que abre o WhatsApp do cliente em nova aba. */
+function WaLink({
+  href,
+  title,
+  icon: Icon,
+}: {
+  href: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={title}
+      aria-label={title}
+      className="rounded-lg p-2 text-emerald-300/80 transition-colors hover:bg-emerald-400/10 hover:text-emerald-300"
+    >
+      <Icon className="h-4 w-4" />
+    </a>
   );
 }
 

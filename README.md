@@ -61,3 +61,9 @@ Paleta extraída do catálogo:
 
 Fontes: **Oswald** (display) + **Inter** (texto). Fundo com gradientes suaves
 e textura hexagonal discreta.
+
+## Deploy Notes
+
+- Vercel production branch: main
+- Cron reminders route: /api/cron/reminders
+- Last deploy trigger: manual sync

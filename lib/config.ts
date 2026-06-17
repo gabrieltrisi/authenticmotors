@@ -11,7 +11,10 @@ export const SITE = {
     "Tratamentos automotivos especializados para carros e motos com acabamento profissional e proteção duradoura.",
   url: "https://www.authenticmotors.com.br",
   // Número internacional sem espaços/símbolos: 55 (Brasil) + DDD + número.
-  whatsappNumber: "5575991472818",
+  // Lido de NEXT_PUBLIC_WHATSAPP_NUMBER (embutido no bundle por ser público);
+  // o valor abaixo é apenas o fallback caso a env não esteja definida.
+  whatsappNumber:
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "5575982799973",
   instagram: {
     handle: "@authenticmotorsrj",
     url: "https://instagram.com/authenticmotorsrj",

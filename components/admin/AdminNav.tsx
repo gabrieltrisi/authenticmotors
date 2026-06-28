@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Wallet } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Wallet, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/admin", label: "Visão Geral", icon: LayoutDashboard },
   { href: "/admin/agendamentos", label: "Agendamentos", icon: CalendarDays },
   { href: "/admin/caixa", label: "Caixa", icon: Wallet },
+  { href: "/admin/faturamento", label: "Faturamento", icon: TrendingUp },
 ] as const;
 
 /**

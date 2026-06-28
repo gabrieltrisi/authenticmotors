@@ -24,13 +24,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AdminNav } from "@/components/admin/AdminNav";
 import {
-  fetchMovements,
+  fetchMovementsForPeriod,
   createMovement,
   deleteMovement,
   summarize,
   formatBRL,
   formatDateBR,
   todayISODate,
+  currentISOMonth,
   movementDateForDay,
   PAYMENT_OPTIONS,
   PAYMENT_META,
@@ -38,6 +39,8 @@ import {
   type CashMovement,
   type CashMovementType,
   type PaymentMethod,
+  type Period,
+  type PeriodMode,
 } from "@/lib/caixa";
 import { SERVICES_GROUPED, SERVICES_BY_ID } from "@/lib/services-catalog";
 import { downloadCsv, downloadPdf } from "@/lib/caixa-export";
@@ -57,7 +60,9 @@ const EMPTY_FORM = {
 };
 
 export function CashRegister() {
+  const [mode, setMode] = useState<PeriodMode>("day");
   const [day, setDay] = useState<string>(todayISODate());
+  const [month, setMonth] = useState<string>(currentISOMonth());
   const [items, setItems] = useState<CashMovement[]>([]);
   const [state, setState] = useState<LoadState>("loading");
 
@@ -68,10 +73,18 @@ export function CashRegister() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  const load = useCallback(async (dayISO: string) => {
+  const period = useMemo<Period>(
+    () =>
+      mode === "month"
+        ? { mode: "month", value: month }
+        : { mode: "day", value: day },
+    [mode, day, month]
+  );
+
+  const load = useCallback(async (p: Period) => {
     setState("loading");
     try {
-      const data = await fetchMovements(dayISO);
+      const data = await fetchMovementsForPeriod(p);
       setItems(data);
       setState("ready");
     } catch {
@@ -80,8 +93,8 @@ export function CashRegister() {
   }, []);
 
   useEffect(() => {
-    load(day);
-  }, [day, load]);
+    load(period);
+  }, [period, load]);
 
   const totals = useMemo(() => summarize(items), [items]);
 
@@ -112,7 +125,7 @@ export function CashRegister() {
     setExportingPdf(true);
     setFormError("");
     try {
-      await downloadPdf(items, day);
+      await downloadPdf(items, period);
     } catch {
       setFormError("Não foi possível gerar o PDF.");
     } finally {
@@ -135,6 +148,16 @@ export function CashRegister() {
       return;
     }
 
+    // No modo mensal não há um dia escolhido: usa hoje se cair dentro do mês
+    // selecionado, senão o primeiro dia do mês.
+    const today = todayISODate();
+    const launchDay =
+      mode === "day"
+        ? day
+        : today.startsWith(month)
+          ? today
+          : `${month}-01`;
+
     setSubmitting(true);
     try {
       await createMovement({
@@ -146,11 +169,11 @@ export function CashRegister() {
         customerName: form.customerName.trim() || undefined,
         serviceName: form.serviceName.trim() || undefined,
         notes: form.notes.trim() || undefined,
-        movementDate: movementDateForDay(day),
+        movementDate: movementDateForDay(launchDay),
       });
       setForm({ ...EMPTY_FORM, type: form.type, paymentMethod: form.paymentMethod });
       setSuccess("Lançamento registrado com sucesso.");
-      await load(day);
+      await load(period);
     } catch (err) {
       setFormError(
         err instanceof Error ? err.message : "Erro ao registrar lançamento."
@@ -202,7 +225,7 @@ export function CashRegister() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => load(day)}
+              onClick={() => load(period)}
               disabled={state === "loading"}
             >
               <RefreshCw
@@ -219,20 +242,46 @@ export function CashRegister() {
         {/* Filtro por data + exportação + resumo */}
         <div className="mb-6 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <label
-                htmlFor="caixa-day"
-                className="text-xs font-semibold uppercase tracking-wider text-foreground-muted"
-              >
-                Dia
-              </label>
-              <input
-                id="caixa-day"
-                type="date"
-                value={day}
-                onChange={(e) => setDay(e.target.value || todayISODate())}
-                className="rounded-full border border-copper bg-background/60 px-4 py-2 text-sm text-white outline-none focus:border-copper-light focus:ring-2 focus:ring-copper/30"
-              />
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Alterna entre visão diária e mensal */}
+              <div className="inline-flex rounded-full border border-copper p-0.5">
+                {(["day", "month"] as PeriodMode[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    aria-pressed={mode === m ? "true" : "false"}
+                    className={cn(
+                      "rounded-full px-4 py-1.5 text-xs font-semibold transition-colors",
+                      mode === m
+                        ? "bg-copper/20 text-white"
+                        : "text-foreground-muted hover:text-white"
+                    )}
+                  >
+                    {m === "day" ? "Dia" : "Mês"}
+                  </button>
+                ))}
+              </div>
+
+              {mode === "day" ? (
+                <input
+                  id="caixa-day"
+                  type="date"
+                  aria-label="Dia"
+                  value={day}
+                  onChange={(e) => setDay(e.target.value || todayISODate())}
+                  className="rounded-full border border-copper bg-background/60 px-4 py-2 text-sm text-white outline-none focus:border-copper-light focus:ring-2 focus:ring-copper/30"
+                />
+              ) : (
+                <input
+                  id="caixa-month"
+                  type="month"
+                  aria-label="Mês"
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value || currentISOMonth())}
+                  className="rounded-full border border-copper bg-background/60 px-4 py-2 text-sm text-white outline-none focus:border-copper-light focus:ring-2 focus:ring-copper/30"
+                />
+              )}
             </div>
 
             {/* Exportação dos lançamentos do dia filtrado */}
@@ -240,7 +289,7 @@ export function CashRegister() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => downloadCsv(items, day)}
+                onClick={() => downloadCsv(items, period)}
                 disabled={state !== "ready" || items.length === 0}
               >
                 <FileSpreadsheet className="h-4 w-4" />
@@ -265,7 +314,7 @@ export function CashRegister() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <SummaryCard
               icon={Wallet}
-              label="Saldo do dia"
+              label={mode === "day" ? "Saldo do dia" : "Saldo do mês"}
               value={formatBRL(totals.saldo)}
               tone={totals.saldo >= 0 ? "neutral" : "negative"}
             />
@@ -446,7 +495,7 @@ export function CashRegister() {
                 title="Erro ao carregar"
                 text="Não foi possível buscar as movimentações. Verifique a conexão com o banco e tente novamente."
                 action={
-                  <Button variant="outline" size="sm" onClick={() => load(day)}>
+                  <Button variant="outline" size="sm" onClick={() => load(period)}>
                     <RefreshCw className="h-4 w-4" />
                     Tentar novamente
                   </Button>
@@ -458,7 +507,11 @@ export function CashRegister() {
               <EmptyState
                 icon={Inbox}
                 title="Nenhuma movimentação"
-                text="Não há lançamentos para o dia selecionado. Registre o primeiro no formulário ao lado."
+                text={
+                  mode === "day"
+                    ? "Não há lançamentos para o dia selecionado. Registre o primeiro no formulário ao lado."
+                    : "Não há lançamentos para o mês selecionado. Registre o primeiro no formulário ao lado."
+                }
               />
             )}
 
@@ -546,7 +599,7 @@ export function CashRegister() {
 
             {state === "ready" && items.length > 0 && (
               <p className="px-5 py-3 text-xs text-foreground-muted/70">
-                {items.length} movimentação(ões) no dia
+                {items.length} movimentação(ões) no {mode === "day" ? "dia" : "mês"}
               </p>
             )}
           </section>

@@ -11,15 +11,12 @@ import {
   PAYMENT_META,
   formatDateBR,
   formatBRL,
+  formatPeriodLabel,
+  periodFileTag,
   summarize,
   type CashMovement,
+  type Period,
 } from "@/lib/caixa";
-
-/** "YYYY-MM-DD" -> "DD/MM/AAAA". */
-function isoToBR(iso: string): string {
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
 
 /** Troca o NBSP ( ) que o toLocaleString insere após "R$" por espaço normal. */
 function plainCurrency(value: number): string {
@@ -78,11 +75,11 @@ export function buildCsv(items: CashMovement[]): string {
   return `﻿${lines}`;
 }
 
-export function downloadCsv(items: CashMovement[], dayISO: string): void {
+export function downloadCsv(items: CashMovement[], period: Period): void {
   const blob = new Blob([buildCsv(items)], {
     type: "text/csv;charset=utf-8;",
   });
-  triggerDownload(blob, `caixa-authentic-motors-${dayISO}.csv`);
+  triggerDownload(blob, `caixa-authentic-motors-${periodFileTag(period)}.csv`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -95,7 +92,7 @@ const MUTED: [number, number, number] = [120, 120, 120];
 
 export async function downloadPdf(
   items: CashMovement[],
-  dayISO: string
+  period: Period
 ): Promise<void> {
   const { jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
@@ -114,7 +111,7 @@ export async function downloadPdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...MUTED);
-  doc.text(`Período: ${isoToBR(dayISO)}`, left, 68);
+  doc.text(`Período: ${formatPeriodLabel(period)}`, left, 68);
 
   // Resumo
   doc.setFontSize(11);
@@ -159,5 +156,5 @@ export async function downloadPdf(
     margin: { left, right: 40 },
   });
 
-  doc.save(`caixa-authentic-motors-${dayISO}.pdf`);
+  doc.save(`caixa-authentic-motors-${periodFileTag(period)}.pdf`);
 }

@@ -51,9 +51,16 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date"); // YYYY-MM-DD
+    const month = searchParams.get("month"); // YYYY-MM
 
     let where: Prisma.CashMovementWhereInput | undefined;
-    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (month && /^\d{4}-\d{2}$/.test(month)) {
+      // Janela do mês inteiro em UTC.
+      const [y, m] = month.split("-").map(Number);
+      const start = new Date(Date.UTC(y, m - 1, 1));
+      const end = new Date(Date.UTC(y, m, 1)); // primeiro dia do mês seguinte
+      where = { movementDate: { gte: start, lt: end } };
+    } else if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
       // Janela do dia em UTC (cliente grava movementDate ao meio-dia UTC).
       const start = new Date(`${date}T00:00:00.000Z`);
       const end = new Date(start);

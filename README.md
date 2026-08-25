@@ -20,6 +20,11 @@
   <img src="https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white" />
 </p>
 
+
+<p align="center">
+  <a href="https://authenticmotors.vercel.app/"><img width="100%" src="docs/preview.gif" alt="Site da Authentic Motors - estetica automotiva premium" /></a>
+</p>
+
 ---
 
 ## ✨ Sobre

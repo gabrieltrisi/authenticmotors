@@ -1,0 +1,100 @@
+// Schema Prisma — módulo de Caixa da Authentic Motors.
+// Banco: PostgreSQL (Neon) via DATABASE_URL.
+// learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CashMovement {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  type          CashMovementType
+  description   String
+  amount        Decimal          @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  category      String?
+  customerName  String?
+  serviceName   String?
+  notes         String?
+  movementDate  DateTime
+  createdBy     String?
+
+  // Vínculo opcional com o agendamento que gerou esta entrada (dedup da
+  // entrada automática ao concluir um agendamento). `@unique` garante no máximo
+  // uma movimentação por agendamento.
+  appointmentId String?      @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([movementDate])
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customerName    String
+  whatsapp        String
+  email           String?
+  vehicleType     String
+  vehicleModel    String
+  plate           String?
+  serviceName     String
+  serviceCategory String?
+  vehicleSize     String?
+  amount          Decimal @db.Decimal(10, 2)
+
+  appointmentDate DateTime
+  appointmentTime String
+
+  notes  String?
+  status AppointmentStatus @default(PENDING)
+
+  source String @default("site-authentic-motors")
+
+  confirmedAt DateTime?
+  completedAt DateTime?
+  canceledAt  DateTime?
+
+  // Controle de e-mails enviados (dedup — evita reenvio).
+  createdEmailSentAt   DateTime?
+  confirmationSentAt   DateTime?
+  canceledEmailSentAt  DateTime?
+  completedEmailSentAt DateTime?
+  reminderSentAt       DateTime?
+
+  // Entrada de caixa gerada ao concluir (1:1 opcional).
+  cashMovement CashMovement?
+
+  @@index([appointmentDate])
+  @@index([status])
+  @@index([appointmentDate, appointmentTime])
+}
+
+enum CashMovementType {
+  ENTRY
+  EXIT
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  DEBIT_CARD
+  CREDIT_CARD
+  OTHER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELED
+}

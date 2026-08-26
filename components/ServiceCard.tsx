@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { PriceTag } from "@/components/PriceTag";
 import { whatsappLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { Tilt3D } from "@/components/ui/Tilt3D";
 
 /**
  * Card de plano (Carros / Motos). O plano em destaque (Nível 3) recebe
@@ -11,9 +12,10 @@ import { cn } from "@/lib/utils";
  */
 export function ServiceCard({ plan }: { plan: ServicePlan }) {
   return (
+    <Tilt3D className="h-full rounded-2xl" max={6}>
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl border bg-background-secondary/80 p-6 backdrop-blur-sm transition-all duration-500 hover:-translate-y-1.5 sm:p-7",
+        "group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-background-secondary/80 p-6 backdrop-blur-sm transition-all duration-500 sm:p-7",
         plan.featured
           ? "border-copper-light/60 shadow-copper-lg ring-1 ring-copper-light/30"
           : "border-copper shadow-card hover:border-copper-light/50"
@@ -73,5 +75,6 @@ export function ServiceCard({ plan }: { plan: ServicePlan }) {
         Tenho Interesse
       </ButtonLink>
     </article>
+    </Tilt3D>
   );
 }

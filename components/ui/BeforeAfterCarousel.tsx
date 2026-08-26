@@ -17,7 +17,6 @@ export function BeforeAfterCarousel({ pairs }: { pairs: BeforeAfterPair[] }) {
   const [pos, setPos] = useState(50);
   const boxRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
-  const swipeStart = useRef<{ x: number; pos: number } | null>(null);
 
   if (!pairs.length) return null;
   const cur = pairs[idx];
@@ -37,26 +36,16 @@ export function BeforeAfterCarousel({ pairs }: { pairs: BeforeAfterPair[] }) {
 
   const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragging.current = true;
-    swipeStart.current = { x: e.clientX, pos };
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     setFromX(e.clientX);
   };
   const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") {
-      // no toque: swipe horizontal grande troca de carro; caso contrário move a divisória
-      if (!dragging.current || !swipeStart.current) return;
-      setFromX(e.clientX);
-      return;
-    }
+    // desktop: a divisória segue o cursor; no toque, só enquanto arrasta
+    if (e.pointerType === "touch" && !dragging.current) return;
     setFromX(e.clientX);
   };
-  const onUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch" && swipeStart.current) {
-      const dx = e.clientX - swipeStart.current.x;
-      if (Math.abs(dx) > 70) go(dx < 0 ? 1 : -1);
-    }
+  const onUp = () => {
     dragging.current = false;
-    swipeStart.current = null;
   };
 
   return (
@@ -66,10 +55,7 @@ export function BeforeAfterCarousel({ pairs }: { pairs: BeforeAfterPair[] }) {
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
-        onPointerLeave={() => {
-          dragging.current = false;
-          swipeStart.current = null;
-        }}
+        onPointerLeave={onUp}
         className="group relative aspect-[4/3] w-full touch-pan-y cursor-ew-resize select-none overflow-hidden rounded-3xl border border-copper bg-background shadow-copper-lg"
       >
         {/* DEPOIS (base) */}

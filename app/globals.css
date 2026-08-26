@@ -149,3 +149,28 @@
   .btn-gloss::after,
   .nav-underline::after { transition: none !important; }
 }
+
+/* ===== Preloader da marca ===== */
+.pl-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, transparent 0 60%, #c47a4a 82%, #e7c274 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  animation: pl-spin 1s linear infinite;
+}
+@keyframes pl-spin { to { transform: rotate(360deg); } }
+.pl-logo { animation: pl-pulse 1.6s ease-in-out infinite; }
+@keyframes pl-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.pl-shine {
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: pl-sweep 1.5s ease-in-out infinite;
+}
+@keyframes pl-sweep { 0% { transform: translateX(-120%); } 55%, 100% { transform: translateX(120%); } }
+.pl-fill { transform-origin: left; animation: pl-fill 1.5s ease-out forwards; }
+@keyframes pl-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .pl-ring, .pl-logo, .pl-shine, .pl-fill { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}

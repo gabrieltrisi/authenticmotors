@@ -3,6 +3,7 @@ import { Inter, Oswald } from "next/font/google";
 import { SITE } from "@/lib/config";
 import { localBusinessJsonLd } from "@/lib/seo";
 import { ChatWidget } from "@/components/ChatWidget";
+import { Preloader } from "@/components/ui/Preloader";
 import "./globals.css";
 
 const inter = Inter({
@@ -83,6 +84,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${inter.variable} ${oswald.variable}`}>
       <body>
+        <Preloader />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

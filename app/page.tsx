@@ -6,6 +6,7 @@ import { CarsSection } from "@/components/sections/CarsSection";
 import { MotosSection } from "@/components/sections/MotosSection";
 import { AdditionalSection } from "@/components/sections/AdditionalSection";
 import { GallerySection } from "@/components/sections/GallerySection";
+import { FaqSection } from "@/components/sections/FaqSection";
 import { SchedulingSection } from "@/components/sections/SchedulingSection";
 import { CTASection } from "@/components/sections/CTASection";
 
@@ -21,6 +22,7 @@ export default function HomePage() {
         <MotosSection />
         <AdditionalSection />
         <GallerySection />
+        <FaqSection />
         <SchedulingSection />
         <CTASection />
       </main>

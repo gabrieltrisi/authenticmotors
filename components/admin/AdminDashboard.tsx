@@ -49,6 +49,13 @@ function parseBR(data: string, horario: string): Date {
   return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0);
 }
 
+const STATUS_BARS = [
+  { key: "pendente", label: "Pendentes", color: "bg-amber-400" },
+  { key: "confirmado", label: "Confirmados", color: "bg-sky-400" },
+  { key: "concluido", label: "Concluídos", color: "bg-emerald-400" },
+  { key: "cancelado", label: "Cancelados", color: "bg-red-400" },
+] as const;
+
 export function AdminDashboard() {
   const todayISO = todayISODate();
   const todayBR = isoToBR(todayISO);
@@ -111,6 +118,12 @@ export function AdminDashboard() {
 
   const totals = useMemo(() => summarize(movements), [movements]);
   const lastMovements = useMemo(() => movements.slice(0, 5), [movements]);
+
+  const statusCounts = useMemo(() => {
+    const c: Record<string, number> = { pendente: 0, confirmado: 0, concluido: 0, cancelado: 0 };
+    for (const a of appts) c[a.status] = (c[a.status] ?? 0) + 1;
+    return c;
+  }, [appts]);
 
   const cashLoading = cashStatus === "loading";
   const apptLoading = apptStatus === "loading";
@@ -326,6 +339,33 @@ export function AdminDashboard() {
             </div>
           </Panel>
         </div>
+
+        {/* Agendamentos por status */}
+        <section className="mt-6">
+          <div className="rounded-2xl border border-copper bg-background-secondary/70 p-5 backdrop-blur">
+            <h2 className="font-display text-sm font-extrabold uppercase tracking-wide text-white">
+              Agendamentos por status
+            </h2>
+            <div className="mt-4 space-y-3">
+              {STATUS_BARS.map(({ key, label, color }) => {
+                const n = statusCounts[key] || 0;
+                const total = appts.length || 1;
+                const pct = Math.round((n / total) * 100);
+                return (
+                  <div key={key}>
+                    <div className="mb-1 flex items-center justify-between text-xs">
+                      <span className="text-foreground-muted">{label}</span>
+                      <span className="font-semibold text-white">{n}</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-background">
+                      <div className={cn("h-full rounded-full transition-all duration-500", color)} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

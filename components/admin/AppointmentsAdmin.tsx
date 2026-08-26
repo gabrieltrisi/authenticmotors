@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { waLinkTo } from "@/lib/whatsapp";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { AppointmentsCalendar } from "@/components/admin/AppointmentsCalendar";
 import {
   fetchAdminAppointments,
   updateAppointmentStatus,
@@ -90,6 +91,8 @@ export function AppointmentsAdmin() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const [view, setView] = useState<"lista" | "calendario">("lista");
 
   const filtered = useMemo(() => {
     return items.filter((a) => {
@@ -247,15 +250,32 @@ export function AppointmentsAdmin() {
             ))}
           </div>
 
-          <div className="relative sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por nome ou serviço…"
-              className="w-full rounded-full border border-copper bg-background/60 py-2 pl-9 pr-4 text-sm text-white placeholder:text-foreground-muted/50 outline-none focus:border-copper-light focus:ring-2 focus:ring-copper/30"
-            />
+          <div className="flex items-center gap-2">
+            <div className="inline-flex shrink-0 rounded-full border border-copper p-0.5">
+              {(["lista", "calendario"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-semibold capitalize transition-colors",
+                    view === v ? "bg-copper/20 text-white" : "text-foreground-muted hover:text-white"
+                  )}
+                >
+                  {v === "lista" ? "Lista" : "Calendário"}
+                </button>
+              ))}
+            </div>
+            <div className="relative flex-1 sm:w-56">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar…"
+                className="w-full rounded-full border border-copper bg-background/60 py-2 pl-9 pr-4 text-sm text-white placeholder:text-foreground-muted/50 outline-none focus:border-copper-light focus:ring-2 focus:ring-copper/30"
+              />
+            </div>
           </div>
         </div>
 
@@ -290,11 +310,15 @@ export function AppointmentsAdmin() {
           )}
 
           {state === "ready" && filtered.length > 0 && (
-            <AppointmentsTable
-              items={filtered}
-              actingId={actingId}
-              onAction={handleAction}
-            />
+            view === "calendario" ? (
+              <AppointmentsCalendar items={filtered} />
+            ) : (
+              <AppointmentsTable
+                items={filtered}
+                actingId={actingId}
+                onAction={handleAction}
+              />
+            )
           )}
         </div>
 
@@ -322,7 +346,8 @@ function AppointmentsTable({
   onAction: (a: AdminAppointment, status: StatusAction) => void;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <>
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[760px] text-left text-sm">
         <thead>
           <tr className="border-b border-copper text-[11px] uppercase tracking-wider text-foreground-muted">
@@ -365,7 +390,30 @@ function AppointmentsTable({
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className="divide-y divide-copper/40 md:hidden">
+        {items.map((a) => (
+          <div key={a.id} className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium text-white">{a.nome}</p>
+                {a.veiculo && <p className="text-xs text-foreground-muted">{a.veiculo}</p>}
+              </div>
+              <StatusBadge status={a.status} />
+            </div>
+            <p className="mt-2 text-sm text-foreground-muted">{a.servico}</p>
+            <p className="mt-1 text-xs text-foreground-muted">
+              {a.data} · {a.horario}
+            </p>
+            <div className="mt-3">
+              <RowActions a={a} acting={actingId === a.id} onAction={onAction} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

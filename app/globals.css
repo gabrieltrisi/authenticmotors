@@ -73,3 +73,79 @@
     mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
   }
 }
+
+/* ===== Efeitos extras (A–E) ===== */
+
+/* A) Brilho "recém-encerado" cruzando a superfície */
+@keyframes am-shine {
+  0% { transform: translateX(-160%) skewX(-20deg); }
+  55% { transform: translateX(260%) skewX(-20deg); }
+  100% { transform: translateX(260%) skewX(-20deg); }
+}
+.gloss-sweep {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 20;
+}
+.gloss-sweep::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 40%;
+  height: 140%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-160%) skewX(-20deg);
+  animation: am-shine 6.5s ease-in-out infinite;
+  animation-delay: 1.4s;
+}
+
+/* B) Indicador de scroll (bounce) */
+@keyframes am-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(6px); opacity: 0.45; }
+}
+.scroll-cue { animation: am-bounce 1.8s ease-in-out infinite; }
+
+/* C1) Brilho varrendo os botões no hover */
+.btn-gloss { position: relative; overflow: hidden; }
+.btn-gloss::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+.btn-gloss:hover::after { left: 130%; }
+
+/* C2) Underline animado nos links do menu */
+.nav-underline { position: relative; }
+.nav-underline::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #a65f3c, #c47a4a);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+.nav-underline:hover::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gloss-sweep::before,
+  .scroll-cue { animation: none !important; }
+  .btn-gloss::after,
+  .nav-underline::after { transition: none !important; }
+}

@@ -36,7 +36,12 @@ export function Header() {
           : "border-b border-transparent bg-transparent"
       )}
     >
-      <div className="container flex h-16 items-center justify-between md:h-20">
+      <div
+        className={cn(
+          "container flex items-center justify-between transition-all duration-300",
+          scrolled ? "h-14 md:h-16" : "h-16 md:h-20"
+        )}
+      >
         <a href="#inicio" aria-label="Authentic Motors — início">
           <Logo />
         </a>
@@ -47,7 +52,7 @@ export function Header() {
             <a
               key={link.href}
               href={link.href}
-              className="rounded-full px-4 py-2 text-sm font-medium text-foreground-muted transition-colors hover:text-white"
+              className="nav-underline rounded-full px-4 py-2 text-sm font-medium text-foreground-muted transition-colors hover:text-white"
             >
               {link.label}
             </a>

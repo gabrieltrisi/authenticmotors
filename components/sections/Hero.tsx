@@ -92,6 +92,8 @@ export function Hero() {
               className="absolute inset-0 bg-gradient-to-br from-copper/15 via-transparent to-copper-dark/20"
               aria-hidden
             />
+            {/* brilho "recém-encerado" cruzando a foto */}
+            <span className="gloss-sweep" aria-hidden />
             {/* legenda */}
             <div className="absolute inset-x-0 bottom-0 p-6">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-copper bg-background/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-copper-light backdrop-blur">
@@ -118,6 +120,16 @@ export function Hero() {
           </div>
         </div>
       </div>
+
+      {/* indicador de scroll */}
+      <a
+        href="#servicos"
+        aria-label="Rolar para os serviços"
+        className="scroll-cue absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-copper-light/80 transition-colors hover:text-copper-light md:flex"
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-[0.25em]">Role</span>
+        <ArrowDown className="h-5 w-5" />
+      </a>
     </section>
   );
 }

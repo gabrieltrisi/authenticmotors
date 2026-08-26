@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { MessageCircle, X, Send, Sparkles } from "lucide-react";
 import { CAR_PLANS, MOTO_PLANS, ENGINE_WASH } from "@/lib/data";
 import { SITE } from "@/lib/config";
@@ -35,6 +36,7 @@ function normalizeDate(text: string): string | null {
 }
 
 export function ChatWidget() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [quick, setQuick] = useState<QR[]>([]);
@@ -220,6 +222,8 @@ export function ChatWidget() {
       return;
     }
   }
+
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <>

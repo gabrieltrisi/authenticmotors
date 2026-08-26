@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AdminGate } from "@/components/admin/AdminGate";
 import { CashRegister } from "@/components/admin/CashRegister";
 
 export const metadata: Metadata = {
@@ -10,9 +9,5 @@ export const metadata: Metadata = {
 
 export default function AdminCaixaPage() {
   // Mesma proteção simples por senha do painel de agendamentos.
-  return (
-    <AdminGate>
-      <CashRegister />
-    </AdminGate>
-  );
+  return <CashRegister />;
 }

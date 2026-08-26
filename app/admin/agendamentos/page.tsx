@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AdminGate } from "@/components/admin/AdminGate";
 import { AppointmentsAdmin } from "@/components/admin/AppointmentsAdmin";
 
 export const metadata: Metadata = {
@@ -10,9 +9,5 @@ export const metadata: Metadata = {
 
 export default function AdminAgendamentosPage() {
   // Acesso liberado em produção, protegido por senha simples (client-side).
-  return (
-    <AdminGate>
-      <AppointmentsAdmin />
-    </AdminGate>
-  );
+  return <AppointmentsAdmin />;
 }

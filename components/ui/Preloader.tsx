@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 /**
@@ -8,6 +9,7 @@ import Image from "next/image";
  * brilho passando e o wordmark. Some com fade após ~1.5s (curto no reduced-motion).
  */
 export function Preloader() {
+  const pathname = usePathname();
   const [done, setDone] = useState(false);
   const [gone, setGone] = useState(false);
 
@@ -23,7 +25,7 @@ export function Preloader() {
     return () => clearTimeout(t);
   }, [done]);
 
-  if (gone) return null;
+  if (gone || pathname?.startsWith("/admin")) return null;
 
   return (
     <div

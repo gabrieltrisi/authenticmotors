@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AdminGate } from "@/components/admin/AdminGate";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 export const metadata: Metadata = {
@@ -9,10 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default function AdminHomePage() {
-  // Mesma proteção simples por senha dos demais painéis.
-  return (
-    <AdminGate>
-      <AdminDashboard />
-    </AdminGate>
-  );
+  // Protegido pelo middleware (cookie httpOnly).
+  return <AdminDashboard />;
 }

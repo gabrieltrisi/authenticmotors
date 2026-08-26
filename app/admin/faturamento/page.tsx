@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AdminGate } from "@/components/admin/AdminGate";
 import { Faturamento } from "@/components/admin/Faturamento";
 
 export const metadata: Metadata = {
@@ -10,9 +9,5 @@ export const metadata: Metadata = {
 
 export default function AdminFaturamentoPage() {
   // Mesma proteção simples por senha das demais áreas do painel.
-  return (
-    <AdminGate>
-      <Faturamento />
-    </AdminGate>
-  );
+  return <Faturamento />;
 }

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { MessageCircle, ArrowDown, Sparkles, ShieldCheck, Star } from "lucide-react";
 import { ButtonLink, Button } from "@/components/ui/button";
+import { Tilt3D } from "@/components/ui/Tilt3D";
 import { whatsappLink, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp";
 
 const HIGHLIGHTS = [
@@ -85,7 +86,7 @@ export function Hero() {
 
         {/* Painel visual premium com foto real */}
         <div className="relative animate-fade-in [animation-delay:200ms]">
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-3xl border border-copper bg-background-secondary shadow-copper-lg">
+          <Tilt3D className="relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-3xl border border-copper bg-background-secondary shadow-copper-lg">
             <Image
               src="/images/hero.jpg"
               alt="Polimento técnico premium na Authentic Motors"
@@ -116,7 +117,7 @@ export function Hero() {
                 Snow Foam · Enceramento técnico · Cristalização · Polimento
               </p>
             </div>
-          </div>
+          </Tilt3D>
 
           {/* selo flutuante */}
           <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 rounded-2xl border border-copper bg-background/90 px-6 py-3 text-center shadow-copper backdrop-blur">

@@ -11,11 +11,13 @@ export function Reveal({
   className = "",
   delay = 0,
   y = 24,
+  tilt = false,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
   y?: number;
+  tilt?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
@@ -46,8 +48,13 @@ export function Reveal({
       className={className}
       style={{
         opacity: shown ? 1 : 0,
-        transform: shown ? "none" : `translateY(${y}px)`,
-        transition: `opacity .7s cubic-bezier(.16,1,.3,1) ${delay}ms, transform .7s cubic-bezier(.16,1,.3,1) ${delay}ms`,
+        transform: shown
+          ? "none"
+          : tilt
+            ? `perspective(1200px) rotateX(7deg) translateY(${y}px)`
+            : `translateY(${y}px)`,
+        transformOrigin: "center top",
+        transition: `opacity .7s cubic-bezier(.16,1,.3,1) ${delay}ms, transform .8s cubic-bezier(.16,1,.3,1) ${delay}ms`,
         willChange: "opacity, transform",
       }}
     >

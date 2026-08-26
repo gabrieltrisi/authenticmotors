@@ -18,7 +18,7 @@ export function CarsSection() {
           subtitle="Escolha o tratamento ideal para o seu veículo. Preços por porte: Sedan/Hatch e SUV."
         />
 
-        <Reveal className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Reveal tilt className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {CAR_PLANS.map((plan) => (
             <ServiceCard key={plan.id} plan={plan} />
           ))}

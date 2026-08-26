@@ -37,7 +37,7 @@ export function GallerySection() {
           align="center"
         />
 
-        <Reveal delay={80}>
+        <Reveal delay={80} tilt>
           <BeforeAfterCarousel pairs={pairs} />
         </Reveal>
       </div>

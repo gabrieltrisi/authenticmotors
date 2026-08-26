@@ -3,6 +3,8 @@ import { MessageCircle, ArrowDown, Sparkles, ShieldCheck, Star } from "lucide-re
 import { ButtonLink, Button } from "@/components/ui/button";
 import { Tilt3D } from "@/components/ui/Tilt3D";
 import { HeroBackground } from "@/components/ui/HeroBackground";
+import { ShineCanvas } from "@/components/ui/ShineCanvas";
+import { Magnetic } from "@/components/ui/Magnetic";
 import { whatsappLink, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp";
 
 const HIGHLIGHTS = [
@@ -19,6 +21,8 @@ export function Hero() {
     >
       {/* Camadas de fundo automotivo (com parallax sutil ao mouse) */}
       <HeroBackground />
+      {/* Brilho "recém-encerado" em WebGL (partículas douradas) */}
+      <ShineCanvas />
 
       <div className="container relative grid items-center gap-14 py-16 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Conteúdo */}
@@ -42,21 +46,25 @@ export function Hero() {
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <ButtonLink
-              href={whatsappLink(DEFAULT_WHATSAPP_MESSAGE)}
-              target="_blank"
-              rel="noopener noreferrer"
-              size="lg"
-            >
-              <MessageCircle className="h-5 w-5" />
-              Agendar pelo WhatsApp
-            </ButtonLink>
-            <a href="#servicos">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                Ver Serviços
-                <ArrowDown className="h-4 w-4" />
-              </Button>
-            </a>
+            <Magnetic>
+              <ButtonLink
+                href={whatsappLink(DEFAULT_WHATSAPP_MESSAGE)}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="lg"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Agendar pelo WhatsApp
+              </ButtonLink>
+            </Magnetic>
+            <Magnetic>
+              <a href="#servicos">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                  Ver Serviços
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+              </a>
+            </Magnetic>
           </div>
 
           <ul className="mt-10 flex flex-wrap gap-x-7 gap-y-3">

@@ -1,5 +1,6 @@
 import { Car, Check } from "lucide-react";
 import { SectionHeading } from "@/components/SectionHeading";
+import { Reveal } from "@/components/ui/Reveal";
 import { ServiceCard } from "@/components/ServiceCard";
 import { PriceTag } from "@/components/PriceTag";
 import { ButtonLink } from "@/components/ui/button";
@@ -17,11 +18,11 @@ export function CarsSection() {
           subtitle="Escolha o tratamento ideal para o seu veículo. Preços por porte: Sedan/Hatch e SUV."
         />
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Reveal className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {CAR_PLANS.map((plan) => (
             <ServiceCard key={plan.id} plan={plan} />
           ))}
-        </div>
+        </Reveal>
 
         {/* Lavagem de Motor — destaque horizontal */}
         <div className="mt-8 overflow-hidden rounded-2xl border border-copper bg-background-secondary/80 backdrop-blur-sm">

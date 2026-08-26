@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/ui/Reveal";
 
 /**
  * Cabeçalho de seção no padrão do catálogo: etiqueta cobre + título display
@@ -18,7 +19,7 @@ export function SectionHeading({
   className?: string;
 }) {
   return (
-    <div
+    <Reveal
       className={cn(
         "max-w-3xl",
         align === "center" && "mx-auto text-center",
@@ -41,6 +42,6 @@ export function SectionHeading({
           {subtitle}
         </p>
       )}
-    </div>
+    </Reveal>
   );
 }

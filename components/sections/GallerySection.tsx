@@ -1,4 +1,5 @@
 import { SectionHeading } from "@/components/SectionHeading";
+import { Reveal } from "@/components/ui/Reveal";
 import { GALLERY_ITEMS } from "@/lib/data";
 import { BeforeAfterCarousel, type BeforeAfterPair } from "@/components/ui/BeforeAfterCarousel";
 
@@ -36,7 +37,9 @@ export function GallerySection() {
           align="center"
         />
 
-        <BeforeAfterCarousel pairs={pairs} />
+        <Reveal delay={80}>
+          <BeforeAfterCarousel pairs={pairs} />
+        </Reveal>
       </div>
     </section>
   );

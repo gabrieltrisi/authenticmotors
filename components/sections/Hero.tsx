@@ -2,6 +2,7 @@ import Image from "next/image";
 import { MessageCircle, ArrowDown, Sparkles, ShieldCheck, Star } from "lucide-react";
 import { ButtonLink, Button } from "@/components/ui/button";
 import { Tilt3D } from "@/components/ui/Tilt3D";
+import { HeroBackground } from "@/components/ui/HeroBackground";
 import { whatsappLink, DEFAULT_WHATSAPP_MESSAGE } from "@/lib/whatsapp";
 
 const HIGHLIGHTS = [
@@ -16,21 +17,8 @@ export function Hero() {
       id="inicio"
       className="relative flex min-h-[100svh] items-center overflow-hidden pt-24"
     >
-      {/* Camadas de fundo automotivo */}
-      <div className="absolute inset-0 bg-dark-radial" aria-hidden />
-      <div className="hex-pattern absolute inset-0 opacity-60" aria-hidden />
-      <div
-        className="absolute -left-40 top-1/4 h-[480px] w-[480px] rounded-full bg-copper/20 blur-[120px]"
-        aria-hidden
-      />
-      <div
-        className="absolute -right-32 bottom-0 h-[420px] w-[420px] rounded-full bg-copper-dark/20 blur-[120px]"
-        aria-hidden
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent"
-        aria-hidden
-      />
+      {/* Camadas de fundo automotivo (com parallax sutil ao mouse) */}
+      <HeroBackground />
 
       <div className="container relative grid items-center gap-14 py-16 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Conteúdo */}

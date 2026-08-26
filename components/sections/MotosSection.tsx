@@ -1,4 +1,5 @@
 import { SectionHeading } from "@/components/SectionHeading";
+import { Reveal } from "@/components/ui/Reveal";
 import { ServiceCard } from "@/components/ServiceCard";
 import { MOTO_PLANS } from "@/lib/data";
 
@@ -20,11 +21,11 @@ export function MotosSection() {
           subtitle="Cuidado completo e acabamento técnico também para a sua moto."
         />
 
-        <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2">
+        <Reveal className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2">
           {MOTO_PLANS.map((plan) => (
             <ServiceCard key={plan.id} plan={plan} />
           ))}
-        </div>
+        </Reveal>
       </div>
     </section>
   );

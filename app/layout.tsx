@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Oswald } from "next/font/google";
 import { SITE } from "@/lib/config";
 import { localBusinessJsonLd } from "@/lib/seo";
+import { ChatWidget } from "@/components/ChatWidget";
 import "./globals.css";
 
 const inter = Inter({
@@ -89,6 +90,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <ChatWidget />
       </body>
     </html>
   );
